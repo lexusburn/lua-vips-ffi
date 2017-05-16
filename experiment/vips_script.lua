@@ -1,19 +1,19 @@
 local image   = require("vips_connector")
 
 -- open first image
-local firstImg = image.open('/data/images/firstImg.png')
+local firstImg = image.open('/home/john/pics/k2.jpg')
 -- open second image
-local secondImg = image.open('/data/images/secondImg.png')
+local secondImg = image.open('/home/john/pics/shark.jpg')
 -- output first image size
-log(INFO, "first image width: ", image.width(firstImg))
-log(INFO, "first image height: ", image.height(firstImg))
+print("first image width: ", image.width(firstImg))
+print("first image height: ", image.height(firstImg))
 -- output second image size
-log(INFO, "second image width: ", image.width(secondImg))
-log(INFO, "second image height: ", image.height(secondImg))
+print("second image width: ", image.width(secondImg))
+print("second image height: ", image.height(secondImg))
 -- add second image to first image and put into third image
 local thirdImg = image.insert(firstImg, secondImg, 100, 100)
-log(INFO, "third image width: ", image.width(thirdImg))
-log(INFO, "third image height: ", image.height(thirdImg))
+print("third image width: ", image.width(thirdImg))
+print("third image height: ", image.height(thirdImg))
 -- save third image
-image.save(thirdImg, '/data/images/thirdImg.png')
+image.save(thirdImg, 'x.jpg')
 
