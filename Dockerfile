@@ -3,6 +3,7 @@ FROM openresty/openresty:xenial
 
 # install ubuntu packages
 RUN apt-get update && apt-get install -y \
+    luarocks \
     luajit \
     libmagickwand-dev \
     libgraphicsmagick1-dev \
