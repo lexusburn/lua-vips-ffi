@@ -1,5 +1,5 @@
-local image = require("vips_connector")
 local gvalue = require("gvalue_connector")
+local image = require("vips_connector")
 
 local value
 

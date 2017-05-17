@@ -1,8 +1,8 @@
--- connector code from zshipco (http://codegist.net/user/zshipko)
--- http://codegist.net/snippet/lua/vipslua_zshipko_lua
+-- manipulate GValue objects from lua
+-- pull in gobject via the vips library
 
-local ffi    = require("ffi")
-local vips   = ffi.load("vips")
+local ffi = require("ffi")
+local vips = ffi.load("vips")
 
 ffi.cdef[[
     typedef struct _GValue {
@@ -11,10 +11,6 @@ ffi.cdef[[
     } GValue;
 
     void vips_init (const char* argv0);
-
-    void* g_malloc(size_t size);
-    void* g_malloc0(size_t size);
-    void g_free(void* data);
 
     void g_value_init (GValue* value, unsigned long int type);
     void g_value_unset (GValue* value);

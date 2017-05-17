@@ -1,9 +1,7 @@
--- connector code from zshipco (http://codegist.net/user/zshipko)
--- http://codegist.net/snippet/lua/vipslua_zshipko_lua
-
-local ffi    = require("ffi")
-local C      = ffi.C
-local vips   = ffi.load("vips")
+local ffi = require("ffi")
+local C = ffi.C
+local vips = ffi.load("vips")
+local gvalue = require("gvalue_connector")
 
 ffi.cdef[[
     typedef struct {
@@ -23,7 +21,7 @@ ffi.cdef[[
         bool close;
         bool postclose;
         size_t local_memory;
-    }VipsObject ;
+    } VipsObject;
 
     typedef enum {
         VIPS_DEMAND_STYLE_ERROR = -1,
@@ -159,41 +157,10 @@ ffi.cdef[[
         char *delete_on_close_filename;
     } VipsImage;
 
-    typedef struct _VipsRect {
-        int left;
-        int top;
-        int width;
-        int height;
-    } VipsRect;
+    void* vips_operation_new (const char* operation_name);
+    void g_object_set_property (void* object, const char *name, GValue* value);
+    void* vips_cache_operation_build (void* operation);
 
-    typedef struct _VipsRegion {
-        VipsObject parent_object;
-        VipsImage *im;
-        VipsRect valid;
-        int type;
-        unsigned char *data;
-        int bpl;
-        void *seq;
-        void *thread;
-        void *window;
-        void *buffer;
-        bool invalid;
-    } VipsRegion;
-
-    VipsImage *vips_image_new( void );
-    VipsImage *vips_image_new_mode( const char *name, const char *mode );
-    VipsImage *vips_image_new_from_file( const char *name, ... );
-    int vips_image_write( VipsImage *image, VipsImage *out );
-    int vips_image_write_to_file( VipsImage *image, const char *filename, ... );
-    int vips_insert (VipsImage *main, VipsImage *sub, VipsImage **out, int x, int y, ... );
-    int vips_call( const char *operation_name, ... );
-    void g_object_unref (void* object);
-    int vips_image_get_width( const VipsImage *image );
-    int vips_image_get_height( const VipsImage *image );
-    int vips_image_get_bands( const VipsImage *image );
-
-    VipsRegion *vips_region_new( VipsImage *image );
-    int vips_region_prepare( VipsRegion *reg, VipsRect *r );
 ]]
 
 local image
@@ -202,60 +169,34 @@ local image_mt = {
         vips.g_object_unref(self)
     end,
     __index = {
-        run = function(cmd, ...)
-            vips.vips_call(cmd, ...)
-        end,
-        out = function(cmd, im, ...)
-            o = image.ptr()
-            image.run(cmd, im, o, ...)
-            return o[0]
-        end,
-        open = function(path, mode)
-            return ffi.gc(vips.vips_image_new_mode(path, mode or "r"), vips.g_object_unref)
-        end,
-        new = function(width, height)
-            if width == nil and height == nil then
-                return ffi.gc(vips.vips_image_new(), vips.g_object_unref)
-            end
+        new_from_file = function(filename, options)
+            print("new_from_file")
+            print("  filename =", filename)
+            print("  options =", options)
 
-            p = image.ptr()
-            vips.vips_call("black", p, ffi.new("int", width), ffi.new("int", height))
-            return p[0]
         end,
-        ptr = function(im)
-            out = ffi.new("VipsImage*[1]")
-            out[0] = im or ffi.gc(vips.vips_image_new(), vips.g_object_unref)
-            return out
-        end,
-        insert = function(main, sub, x, y)
-            log(INFO, "vips insert called")
-            o = image.ptr()
-            width = image.width(main)
-            height = image.height(main)
-            log(INFO, "output image created")
-            vips.vips_call("black", o, ffi.new("int", width), ffi.new("int", height))
-            log(INFO, "output image modified")
-            vips.vips_call("insert", main, sub, o, ffi.new("int", x), ffi.new("int", y))
-            log(INFO, "sub inserted into main and created output")
-            return o[0]
-        end,
+        black = function(width, height, options)
+            print("black")
+            print("  width =", width)
+            print("  height =", height)
+            print("  options =", options)
+
+	    local operation = vips.vips_operation_new("black")
+
+	    local value;
+
+	    value = gvalue.new()
+	    value.init(value, gvalue.gint_type);
+	    value.set_int(value, filename)
+            vips.g_object_set_property(operation, "width", value)
+
+	    value = gvalue.new()
+	    value.init(value, gvalue.gint_type);
+	    value.set_int(value, height)
+            vips.g_object_set_property(operation, "height", value)
 
 
-        -- instance variables
-        width = function(im)
-            return vips.vips_image_get_width(im)
+
         end,
-        height = function(im)
-            return vips.vips_image_get_height(im)
-        end,
-        channels = function(im)
-            return vips.vips_image_get_bands(im)
-        end,
-        save = function(im, path)
-            return vips.vips_image_write_to_file(im, path)
-        end
     }
 }
-
-image = ffi.metatype("VipsImage", image_mt)
-return image
