@@ -30,3 +30,8 @@ I'm not sure we need these. Are they for the nginx stuff?
 Run the test script with:
 
 	luajit vips_script.lua
+
+# links
+
+	http://luajit.org/ext_ffi_api.html
+	http://luajit.org/ext_ffi_semantics.html

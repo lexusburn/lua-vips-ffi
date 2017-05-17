@@ -228,15 +228,15 @@ local image_mt = {
             return out
         end,
         insert = function(main, sub, x, y)
-            print("vips insert called")
+            log(INFO, "vips insert called")
             o = image.ptr()
             width = image.width(main)
             height = image.height(main)
-            print("output image created")
+            log(INFO, "output image created")
             vips.vips_call("black", o, ffi.new("int", width), ffi.new("int", height))
-            print("output image modified")
+            log(INFO, "output image modified")
             vips.vips_call("insert", main, sub, o, ffi.new("int", x), ffi.new("int", y))
-            print("sub inserted into main and created output")
+            log(INFO, "sub inserted into main and created output")
             return o[0]
         end,
 
