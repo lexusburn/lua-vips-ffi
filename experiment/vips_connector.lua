@@ -157,9 +157,22 @@ ffi.cdef[[
         char *delete_on_close_filename;
     } VipsImage;
 
+    VipsImage *vips_image_new( void );
+    VipsImage *vips_image_new_mode( const char *name, const char *mode );
+    VipsImage *vips_image_new_from_file( const char *name, ... );
+
     void* vips_operation_new (const char* operation_name);
     void g_object_set_property (void* object, const char *name, GValue* value);
+    void g_object_get_property (void* object, const char *name, GValue* value);
     void* vips_cache_operation_build (void* operation);
+    void vips_object_unref_outputs (VipsObject *object);
+    void g_object_unref(void* object);
+
+    int vips_image_get_width( const VipsImage *image );
+    int vips_image_get_height( const VipsImage *image );
+    int vips_image_get_bands( const VipsImage *image );
+    int vips_image_write( VipsImage *image, VipsImage *out );
+    int vips_image_write_to_file( VipsImage *image, const char *filename, ... );
 
 ]]
 
@@ -169,6 +182,9 @@ local image_mt = {
         vips.g_object_unref(self)
     end,
     __index = {
+        open = function(path, mode)
+            return ffi.gc(vips.vips_image_new_mode(path, mode or "r"), vips.g_object_unref)
+        end,
         new_from_file = function(filename, options)
             print("new_from_file")
             print("  filename =", filename)
@@ -181,22 +197,97 @@ local image_mt = {
             print("  height =", height)
             print("  options =", options)
 
-	    local operation = vips.vips_operation_new("black")
+            local operation = vips.vips_operation_new("black")
 
-	    local value;
+            local value;
 
-	    value = gvalue.new()
-	    value.init(value, gvalue.gint_type);
-	    value.set_int(value, filename)
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, width)
             vips.g_object_set_property(operation, "width", value)
 
-	    value = gvalue.new()
-	    value.init(value, gvalue.gint_type);
-	    value.set_int(value, height)
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, height)
             vips.g_object_set_property(operation, "height", value)
 
 
+            if  vips.vips_cache_operation_build( operation ) then
+                vips.vips_object_unref_outputs( operation )
+                vips.g_object_unref( operation )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
+            end
 
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
+            print("generated image: ", img)
+            print("width: ", vips.vips_image_get_width(img) )
+            print("height: ", vips.vips_image_get_height(img) )
         end,
+        insert = function(main, sub, x, y)
+            local operation = vips.vips_operation_new("insert")
+
+            local value;
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, main)
+            vips.g_object_set_property(operation, "main", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, sub)
+            vips.g_object_set_property(operation, "sub", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, x)
+            vips.g_object_set_property(operation, "x", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, y)
+            vips.g_object_set_property(operation, "y", value)
+
+
+            if  vips.vips_cache_operation_build( operation ) then
+                vips.vips_object_unref_outputs( operation )
+                vips.g_object_unref( operation )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
+            end
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
+            print("generated image: ", img)
+            print("width: ", vips.vips_image_get_width(img) )
+            print("height: ", vips.vips_image_get_height(img) )
+            return img
+        end,
+
+        -- instance variables
+        width = function(im)
+            return vips.vips_image_get_width(im)
+        end,
+        height = function(im)
+            return vips.vips_image_get_height(im)
+        end,
+        channels = function(im)
+            return vips.vips_image_get_bands(im)
+        end,
+        save = function(im, path)
+            return vips.vips_image_write_to_file(im, path)
+        end
     }
 }
+
+image = ffi.metatype("VipsImage", image_mt)
+return image

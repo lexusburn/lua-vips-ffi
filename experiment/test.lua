@@ -18,3 +18,9 @@ print("set value of banana")
 print("fetch value:")
 print("   ", value.get_string(value))
 
+testImg = image.black(800, 600, "options")
+
+firstImg = image.open('/data/images/firstImg.png')
+secondImg = image.open('/data/images/secondImg.png')
+thirdImg = image.insert(firstImg, secondImg, 0, 0)
+image.save(thirdImg, '/data/images/foo3.png')
