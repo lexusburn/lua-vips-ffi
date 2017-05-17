@@ -49,7 +49,7 @@ local gvalue_mt = {
         new = function()
             -- with no init, this will initialize with 0, which is what we need
             -- for a blank GValue
-            value = ffi.new(gvalue.typeof)
+            local value = ffi.new(gvalue.typeof)
             print("allocating gvalue ", value)
             return value
         end,
