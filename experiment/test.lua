@@ -29,3 +29,10 @@ print("   object =", object)
 object.set(object, "banana", 12)
 
 object = nil
+
+
+firstImg = image.open('/data/images/firstImg.png')
+secondImg = image.open('/data/images/secondImg.png')
+thirdImg = image.insert(firstImg, secondImg, 0, 0)
+image.save(thirdImg, '/data/images/foo3.png')
+-- it seems to work but secondImg lost transparency :(
