@@ -159,9 +159,13 @@ ffi.cdef[[
 
     void* vips_operation_new (const char* operation_name);
     void g_object_set_property (void* object, const char *name, GValue* value);
+    void g_object_get_property (void* object, const char *name, GValue* value);
     void* vips_cache_operation_build (void* operation);
     void vips_object_unref_outputs (VipsObject *object);
     void g_object_unref(void* object);
+    int vips_image_get_width( const VipsImage *image );
+    int vips_image_get_height( const VipsImage *image );
+    int vips_image_get_bands( const VipsImage *image );
 
 ]]
 
@@ -201,21 +205,23 @@ local image_mt = {
             if  vips.vips_cache_operation_build( operation ) then
                 vips.vips_object_unref_outputs( operation )
                 vips.g_object_unref( operation )
-                -- vips.vips_error_exit( NULL )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
             end
 
             value = gvalue.new()
-            value.init(value, gvalue.gint_type)
+            value.init(value, gvalue.VipsImage_type)
             vips.g_object_get_property(operation, "out", value)
-            img = g_value_get_object( value )
-            vips.g_value_unset(value)
-            vips.g_object_unref(operation)
+            img = gvalue.get_object( value )
+            print("generated image: ", img)
+            print("width: ", vips.vips_image_get_width(img) )
+            print("height: ", vips.vips_image_get_height(img) )
+        end,
+        write_to_file = function(filename, options)
+            print("write_to_file")
+            print("  filename =", filename)
+            print("  options =", options)
 
-            print("generated image", img)
-
-            vips.g_object_unref(img)
-
-        end
+        end,
     }
 }
 
