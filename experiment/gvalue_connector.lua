@@ -7,7 +7,7 @@ local vips = ffi.load("vips")
 ffi.cdef[[
     typedef struct _GValue {
         unsigned long int type;
-        uint64_t data[2]; 
+        uint64_t data[2];
     } GValue;
 
     void vips_init (const char* argv0);
@@ -20,10 +20,12 @@ ffi.cdef[[
     void g_value_set_string (GValue* value, const char *str);
     void g_value_set_int (GValue* value, int i);
     void g_value_set_object (GValue* value, void* object);
+    void g_value_set_boolean (GValue* value, bool boolean);
 
     const char* g_value_get_string (GValue* value);
     int g_value_get_int (GValue* value);
     void* g_value_get_object (GValue* value);
+    bool g_value_get_boolean (GValue* value);
 
 ]]
 
@@ -43,15 +45,16 @@ local gvalue_mt = {
         typeof = ffi.typeof("GValue"),
 
         -- look up some common gtypes at init for speed
-        gint_type = vips.g_type_from_name("gint"),
-        gstr_type = vips.g_type_from_name("gchararray"),
+        gint_type      = vips.g_type_from_name("gint"),
+        gstr_type      = vips.g_type_from_name("gchararray"),
+        gboolean_type  = vips.g_type_from_name("gboolean"),
         VipsImage_type = vips.g_type_from_name("VipsImage"),
 
         new = function()
             -- with no init, this will initialize with 0, which is what we need
             -- for a blank GValue
             local value = ffi.new(gvalue.typeof)
-            print("allocating gvalue ", value)
+            -- print("allocating gvalue ", value)
             return value
         end,
         init = function(value, type)
@@ -70,6 +73,9 @@ local gvalue_mt = {
         set_object = function(value, object)
             vips.g_value_set_object(value, object)
         end,
+        set_boolean = function(value, boolean)
+            vips.g_value_set_boolean(value, boolean)
+        end,
 
         get_int = function(value, i)
             return vips.g_value_get_int(value)
@@ -79,6 +85,9 @@ local gvalue_mt = {
         end,
         get_object = function(value, object)
             return vips.g_value_get_object(value)
+        end,
+        get_boolean = function(value, boolean)
+            return vips.g_value_get_boolean(value)
         end,
     }
 }
