@@ -309,25 +309,27 @@ local image_mt = {
 
             return img
         end,
-        composite = function(context, main, sub)
-            local operation = vips.vips_operation_new("composite")
+        extract_band = function(im, band, n)
+            local operation = vips.vips_operation_new("extract_band")
 
             local value;
 
             value = gvalue.new()
-            value.init(value, gvalue.VipsObject_type);
-            value.set_object(value, context)
-            vips.g_object_set_property(operation, "context", value)
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, im)
+            vips.g_object_set_property(operation, "in", value)
 
             value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, main)
-            vips.g_object_set_property(operation, "main", value)
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, band)
+            vips.g_object_set_property(operation, "band", value)
 
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, sub)
-            vips.g_object_set_property(operation, "sub", value)
+            if n then
+                value = gvalue.new()
+                value.init(value, gvalue.gint_type);
+                value.set_int(value, n)
+                vips.g_object_set_property(operation, "n", value)
+            end
 
             if  vips.vips_cache_operation_build( operation ) then
                 vips.vips_object_unref_outputs( operation )
@@ -342,12 +344,52 @@ local image_mt = {
 
             return img
         end,
-        combine = function(main, sub, x, y) -- wrapper for extract, composite, insert
+        ifthenelse = function(condition, im1, im2, blend)
+            local operation = vips.vips_operation_new("ifthenelse")
+
+            local value;
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, condition)
+            vips.g_object_set_property(operation, "cond", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, im1)
+            vips.g_object_set_property(operation, "in1", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, im2)
+            vips.g_object_set_property(operation, "in2", value)
+
+            if blend then
+                value = gvalue.new()
+                value.init(value, gvalue.gboolean_type);
+                value.set_boolean(value, blend)
+                vips.g_object_set_property(operation, "blend", value)
+            end
+
+            if  vips.vips_cache_operation_build( operation ) then
+                vips.vips_object_unref_outputs( operation )
+                vips.g_object_unref( operation )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
+            end
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
+
+            return img
+        end,
+        combine = function(main, sub, x, y) -- wrapper for extract, ifthenelse, insert
             local extract = image.extract(main, x, y, vips.vips_image_get_width(sub), vips.vips_image_get_height(sub))
-            -- todo: need vips_composite method: https://github.com/jcupitt/libvips/issues/657
-            -- local composite = image.composite(nil, extract, sub)
-            -- return image.insert(main, composite, x, y)
-            return image.insert(main, sub, x, y)
+            local srcA = image.extract_band(extract, 3)
+            local srcRGB = image.extract_band(extract, 0, 3)
+            local composite = image.ifthenelse(srcA, srcRGB, sub, true)
+            return image.insert(main, composite, x, y)
         end,
 
 
