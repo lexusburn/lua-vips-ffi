@@ -45,11 +45,12 @@ local gvalue_mt = {
         -- look up some common gtypes at init for speed
         gint_type = vips.g_type_from_name("gint"),
         gstr_type = vips.g_type_from_name("gchararray"),
+        VipsImage_type = vips.g_type_from_name("VipsImage"),
 
         new = function()
             -- with no init, this will initialize with 0, which is what we need
             -- for a blank GValue
-            value = ffi.new(gvalue.typeof)
+            local value = ffi.new(gvalue.typeof)
             print("allocating gvalue ", value)
             return value
         end,
