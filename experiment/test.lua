@@ -20,7 +20,7 @@ print("   ", value.get_string(value))
 
 testImg = image.black(800, 600, "options")
 
-firstImg = image.open('/data/images/firstImg.png')
-secondImg = image.open('/data/images/secondImg.png')
-thirdImg = image.insert(firstImg, secondImg, 0, 0)
-image.save(thirdImg, '/data/images/foo3.png')
+backgroundImg = image.open('/data/images/backgroundImg.png')
+watermarkImg = image.open('/data/images/watermarkImg.png')
+newImg = image.combine(backgroundImg, watermarkImg, 100, 100)
+image.save(newImg, '/data/images/newImg.png')

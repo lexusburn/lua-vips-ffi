@@ -251,6 +251,50 @@ local image_mt = {
             value.set_int(value, y)
             vips.g_object_set_property(operation, "y", value)
 
+            if  vips.vips_cache_operation_build( operation ) then
+                vips.vips_object_unref_outputs( operation )
+                vips.g_object_unref( operation )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
+            end
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
+            print("generated image: ", img)
+            print("width: ", vips.vips_image_get_width(img) )
+            print("height: ", vips.vips_image_get_height(img) )
+            return img
+        end,
+        extract = function(im, x, y, w, h)
+            local operation = vips.vips_operation_new("extract_area")
+
+            local value;
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, im)
+            vips.g_object_set_property(operation, "input", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, x)
+            vips.g_object_set_property(operation, "left", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, y)
+            vips.g_object_set_property(operation, "top", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, w)
+            vips.g_object_set_property(operation, "width", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, h)
+            vips.g_object_set_property(operation, "height", value)
 
             if  vips.vips_cache_operation_build( operation ) then
                 vips.vips_object_unref_outputs( operation )
@@ -263,15 +307,49 @@ local image_mt = {
             vips.g_object_get_property(operation, "out", value)
             img = gvalue.get_object( value )
 
+            return img
+        end,
+        composite = function(context, main, sub)
+            local operation = vips.vips_operation_new("composite")
+
+            local value;
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsObject_type);
+            value.set_object(value, context)
+            vips.g_object_set_property(operation, "context", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, main)
+            vips.g_object_set_property(operation, "main", value)
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type);
+            value.set_object(value, sub)
+            vips.g_object_set_property(operation, "sub", value)
+
+            if  vips.vips_cache_operation_build( operation ) then
+                vips.vips_object_unref_outputs( operation )
+                vips.g_object_unref( operation )
+                -- vips.vips_error_exit( NULL ) -- do we need this?
+            end
+
             value = gvalue.new()
             value.init(value, gvalue.VipsImage_type)
             vips.g_object_get_property(operation, "out", value)
             img = gvalue.get_object( value )
-            print("generated image: ", img)
-            print("width: ", vips.vips_image_get_width(img) )
-            print("height: ", vips.vips_image_get_height(img) )
+
             return img
         end,
+        combine = function(main, sub, x, y) -- wrapper for extract, composite, insert
+            local extract = image.extract(main, x, y, vips.vips_image_get_width(sub), vips.vips_image_get_height(sub))
+            -- todo: need vips_composite method: https://github.com/jcupitt/libvips/issues/657
+            -- local composite = image.composite(nil, extract, sub)
+            -- return image.insert(main, composite, x, y)
+            return image.insert(main, sub, x, y)
+        end,
+
 
         -- instance variables
         width = function(im)
