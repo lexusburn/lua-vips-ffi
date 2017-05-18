@@ -256,8 +256,7 @@ local image_mt = {
             value.set_int(value, y)
             vips.g_object_set_property(operation, "y", value)
 
-
-            if  vips.vips_cache_operation_build( operation ) then
+            if vips.vips_cache_operation_build( operation ) then
                 vips.vips_object_unref_outputs( operation )
                 vips.g_object_unref( operation )
                 -- vips.vips_error_exit( NULL ) -- do we need this?

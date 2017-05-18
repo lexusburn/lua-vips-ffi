@@ -88,18 +88,23 @@ ffi.cdef[[
 
 local vobject
 local vobject_mt = {
-    __gc = function(object)
-        print("freeing vobject ", object)
-        vips.g_value_unref(value)
-    end,
     -- no __gc method, we don't build these things ourselves, just wrap the
     -- pointer, so we use ffi.gc() instead
-    -- .... or should there be? unclear, experiment
     __index = {
+	-- types to get ref back from vips_object_get_argument
+        pspec_typeof = ffi.typeof("GParamSpec*[1]"),
+        argument_class_typeof = ffi.typeof("VipsArgumentClass*[1]"),
+        argument_instance_typeof = ffi.typeof("VipsArgumentInstance*[1]"),
+
         new = function(object)
             print("vobject.new")
             print("  ptr =", object)
-            ffi.gc(object, vips.g_object_unref)
+            ffi.gc(object, 
+	        function(x) 
+		    print("unreffing", x)
+		    vips.g_value_unref(x)
+	        end
+	    )
             return object
         end,
         set = function(object, name, value)
@@ -108,27 +113,32 @@ local vobject_mt = {
             print("  name =", name)
             print("  value =", value)
 
-            local pspec = ffi.new("GParamSpec*[1]")
-            local argument_class = ffi.new("VipsArgumentClass*[1]")
-            local argument_instance = ffi.new("VipsArgumentInstance*[1]")
+            local pspec = vobject.pspec_typeof()
+            local argument_class = vobject.argument_class_typeof()
+            local argument_instance = vobject.argument_instance_typeof()
             print("calling vips.vips_object_get_argument ...")
             local result = vips.vips_object_get_argument(object, name,
                 pspec, argument_class, argument_instance)
-            print("   result =", result)
+            print("  result =", result)
             if result ~= 0 then
-                print("unknown field ", name)
+                print("unknown field", name)
                 return nil
             end
 
-            local type = pspec[0].value_type
-
             print("  object param type =", type)
-            
+
+            local type = pspec[0].value_type
+	    local gv = gvalue.new()
+	    gv:init(type)
+
+
+
+	    vips.g_object_set_property(object, name, gv)
         end,
 
         test = function()
             local operation = vips.vips_operation_new("black")
-            --return vobject.new(operation)
+            vobject.new(operation)
             return operation
         end,
 
