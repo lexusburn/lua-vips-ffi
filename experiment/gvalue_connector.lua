@@ -30,6 +30,8 @@ ffi.cdef[[
     void* g_value_get_object (GValue* value);
     bool g_value_get_boolean (GValue* value);
 
+    void vips_value_set_array_double (GValue* value, const double* array, int n );
+
 ]]
 
 -- this will add the vips types as well
@@ -49,6 +51,7 @@ local gvalue_mt = {
         gva_typeof   = ffi.typeof("GValue[1]"),
         image_typeof = ffi.typeof("VipsImage*"),
         blob_typeof  = ffi.typeof("VipsBlob*"),
+        pdouble_typeof = ffi.typeof("double[?]"),
 
         -- look up some common gtypes at init for speed
         gint_type     = vips.g_type_from_name("gint"),
@@ -56,6 +59,7 @@ local gvalue_mt = {
         gboolean_type = vips.g_type_from_name("gboolean"),
         image_type    = vips.g_type_from_name("VipsImage"),
         blob_type     = vips.g_type_from_name("VipsBlob"),
+        array_double_type = vips.g_type_from_name("VipsArrayDouble"),
 
         new = function()
             -- with no init, this will initialize with 0, which is what we need
@@ -89,6 +93,11 @@ local gvalue_mt = {
                 vips.g_value_set_object(gv, value)
             elseif gtype == gvalue.blob_type then
                 vips.g_value_set_object(gv, value)
+            elseif gtype == gvalue.array_double_type then
+                local n = #value
+                local a = ffi.new(gvalue.pdouble_typeof, n, value)
+
+                vips.vips_value_set_array_double(gv, a, n)
             else
                 print("unsupported gtype", gtype)
             end

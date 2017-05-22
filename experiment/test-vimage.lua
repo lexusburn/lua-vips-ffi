@@ -17,3 +17,5 @@ image3 = vimage:black(1, 2, {bands = 3})
 image4 = vimage.new_from_file("/data/images/secondImg.png")
 image4 = image4:invert()
 image4:write_to_file("/data/images/x.jpg")
+
+x = image4:linear({1, 2, 3}, {4, 5, 6})
