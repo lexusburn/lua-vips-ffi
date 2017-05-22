@@ -1,26 +1,29 @@
-local gvalue = require("gvalue_connector")
-local image = require("vips_connector")
-
-local value
-
-value = gvalue.new()
-value.init(value, gvalue.gint_type)
-value.set_int(value, 12)
-print("set value of 12")
-print("fetch value:")
-print("   ", value.get_int(value))
+-- experiment with inheritance
 
 
-value = gvalue.new()
-value.init(value, gvalue.gstr_type)
-value.set_string(value, "banana")
-print("set value of banana")
-print("fetch value:")
-print("   ", value.get_string(value))
+local BaseClass = {}
 
-testImg = image.black(800, 600, "options")
+function BaseClass:new()
+    print("in BaseClass:new")
+    instance = {}
+    setmetatable(instance, self)
+    self.__index = self
+    return instance
+end
 
-backgroundImg = image.open('/data/images/backgroundImg.png')
-watermarkImg = image.open('/data/images/watermarkImg.png')
-newImg = image.combine(backgroundImg, watermarkImg, 100, 100)
-image.save(newImg, '/data/images/newImg.png')
+function BaseClass:a()
+    print("in BaseClass:a")
+end
+
+local x = BaseClass:new()
+x:a()
+
+local SubClass = BaseClass:new()
+
+function SubClass:b()
+    print("in SubClass:b")
+end
+
+local y = SubClass:new()
+y:a()
+y:b()

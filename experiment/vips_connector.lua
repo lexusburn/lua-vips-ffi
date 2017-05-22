@@ -160,6 +160,8 @@ ffi.cdef[[
     VipsImage *vips_image_new( void );
     VipsImage *vips_image_new_mode( const char *name, const char *mode );
     VipsImage *vips_image_new_from_file( const char *name, ... );
+    int vips_image_write( VipsImage *image, VipsImage *out );
+    int vips_image_write_to_file( VipsImage *image, const char *filename, ... );
 
     void* vips_operation_new (const char* operation_name);
     void g_object_set_property (void* object, const char *name, GValue* value);
@@ -167,12 +169,9 @@ ffi.cdef[[
     void* vips_cache_operation_build (void* operation);
     void vips_object_unref_outputs (VipsObject *object);
     void g_object_unref(void* object);
-
     int vips_image_get_width( const VipsImage *image );
     int vips_image_get_height( const VipsImage *image );
     int vips_image_get_bands( const VipsImage *image );
-    int vips_image_write( VipsImage *image, VipsImage *out );
-    int vips_image_write_to_file( VipsImage *image, const char *filename, ... );
 
 ]]
 
@@ -226,6 +225,12 @@ local image_mt = {
             print("width: ", vips.vips_image_get_width(img) )
             print("height: ", vips.vips_image_get_height(img) )
         end,
+        write_to_file = function(filename, options)
+            print("write_to_file")
+            print("  filename =", filename)
+            print("  options =", options)
+
+        end,
         insert = function(main, sub, x, y)
             local operation = vips.vips_operation_new("insert")
 
@@ -251,11 +256,16 @@ local image_mt = {
             value.set_int(value, y)
             vips.g_object_set_property(operation, "y", value)
 
-            if  vips.vips_cache_operation_build( operation ) then
+            if vips.vips_cache_operation_build( operation ) then
                 vips.vips_object_unref_outputs( operation )
                 vips.g_object_unref( operation )
                 -- vips.vips_error_exit( NULL ) -- do we need this?
             end
+
+            value = gvalue.new()
+            value.init(value, gvalue.VipsImage_type)
+            vips.g_object_get_property(operation, "out", value)
+            img = gvalue.get_object( value )
 
             value = gvalue.new()
             value.init(value, gvalue.VipsImage_type)
@@ -266,132 +276,6 @@ local image_mt = {
             print("height: ", vips.vips_image_get_height(img) )
             return img
         end,
-        extract = function(im, x, y, w, h)
-            local operation = vips.vips_operation_new("extract_area")
-
-            local value;
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, im)
-            vips.g_object_set_property(operation, "input", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.gint_type);
-            value.set_int(value, x)
-            vips.g_object_set_property(operation, "left", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.gint_type);
-            value.set_int(value, y)
-            vips.g_object_set_property(operation, "top", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.gint_type);
-            value.set_int(value, w)
-            vips.g_object_set_property(operation, "width", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.gint_type);
-            value.set_int(value, h)
-            vips.g_object_set_property(operation, "height", value)
-
-            if  vips.vips_cache_operation_build( operation ) then
-                vips.vips_object_unref_outputs( operation )
-                vips.g_object_unref( operation )
-                -- vips.vips_error_exit( NULL ) -- do we need this?
-            end
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type)
-            vips.g_object_get_property(operation, "out", value)
-            img = gvalue.get_object( value )
-
-            return img
-        end,
-        extract_band = function(im, band, n)
-            local operation = vips.vips_operation_new("extract_band")
-
-            local value;
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, im)
-            vips.g_object_set_property(operation, "in", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.gint_type);
-            value.set_int(value, band)
-            vips.g_object_set_property(operation, "band", value)
-
-            if n then
-                value = gvalue.new()
-                value.init(value, gvalue.gint_type);
-                value.set_int(value, n)
-                vips.g_object_set_property(operation, "n", value)
-            end
-
-            if  vips.vips_cache_operation_build( operation ) then
-                vips.vips_object_unref_outputs( operation )
-                vips.g_object_unref( operation )
-                -- vips.vips_error_exit( NULL ) -- do we need this?
-            end
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type)
-            vips.g_object_get_property(operation, "out", value)
-            img = gvalue.get_object( value )
-
-            return img
-        end,
-        ifthenelse = function(condition, im1, im2, blend)
-            local operation = vips.vips_operation_new("ifthenelse")
-
-            local value;
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, condition)
-            vips.g_object_set_property(operation, "cond", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, im1)
-            vips.g_object_set_property(operation, "in1", value)
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type);
-            value.set_object(value, im2)
-            vips.g_object_set_property(operation, "in2", value)
-
-            if blend then
-                value = gvalue.new()
-                value.init(value, gvalue.gboolean_type);
-                value.set_boolean(value, blend)
-                vips.g_object_set_property(operation, "blend", value)
-            end
-
-            if  vips.vips_cache_operation_build( operation ) then
-                vips.vips_object_unref_outputs( operation )
-                vips.g_object_unref( operation )
-                -- vips.vips_error_exit( NULL ) -- do we need this?
-            end
-
-            value = gvalue.new()
-            value.init(value, gvalue.VipsImage_type)
-            vips.g_object_get_property(operation, "out", value)
-            img = gvalue.get_object( value )
-
-            return img
-        end,
-        combine = function(main, sub, x, y) -- wrapper for extract, ifthenelse, insert
-            local extract = image.extract(main, x, y, vips.vips_image_get_width(sub), vips.vips_image_get_height(sub))
-            local srcA = image.extract_band(extract, 3)
-            local srcRGB = image.extract_band(extract, 0, 3)
-            local composite = image.ifthenelse(srcA, srcRGB, sub, true)
-            return image.insert(main, composite, x, y)
-        end,
-
 
         -- instance variables
         width = function(im)

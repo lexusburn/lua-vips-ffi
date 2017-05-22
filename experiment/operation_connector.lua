@@ -47,18 +47,18 @@ local image_mt = {
             print("  height =", height)
             print("  options =", options)
 
-	    local operation = vips.vips_operation_new("black")
+            local operation = vips.vips_operation_new("black")
 
-	    local value;
+            local value;
 
-	    value = gvalue.new()
-	    value.init(value, gvalue.gint_type);
-	    value.set_int(value, filename)
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, filename)
             vips.g_object_set_property(operation, "width", value)
 
-	    value = gvalue.new()
-	    value.init(value, gvalue.gint_type);
-	    value.set_int(value, height)
+            value = gvalue.new()
+            value.init(value, gvalue.gint_type);
+            value.set_int(value, height)
             vips.g_object_set_property(operation, "height", value)
 
 
