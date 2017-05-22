@@ -11,6 +11,7 @@ ffi.cdef[[
     } GValue;
 
     typedef struct _VipsImage VipsImage;
+    typedef struct _VipsBlob VipsBlob;
 
     void vips_init (const char* argv0);
 
@@ -22,10 +23,12 @@ ffi.cdef[[
     void g_value_set_string (GValue* value, const char *str);
     void g_value_set_int (GValue* value, int i);
     void g_value_set_object (GValue* value, void* object);
+    void g_value_set_boolean (GValue* value, bool boolean);
 
     const char* g_value_get_string (GValue* value);
     int g_value_get_int (GValue* value);
     void* g_value_get_object (GValue* value);
+    bool g_value_get_boolean (GValue* value);
 
 ]]
 
@@ -45,11 +48,14 @@ local gvalue_mt = {
         gv_typeof    = ffi.typeof("GValue"),
         gva_typeof   = ffi.typeof("GValue[1]"),
         image_typeof = ffi.typeof("VipsImage*"),
+        blob_typeof  = ffi.typeof("VipsBlob*"),
 
         -- look up some common gtypes at init for speed
         gint_type     = vips.g_type_from_name("gint"),
         gstr_type     = vips.g_type_from_name("gchararray"),
+        gboolean_type = vips.g_type_from_name("gboolean"),
         image_type    = vips.g_type_from_name("VipsImage"),
+        blob_type     = vips.g_type_from_name("VipsBlob"),
 
         new = function()
             -- with no init, this will initialize with 0, which is what we need
@@ -77,7 +83,11 @@ local gvalue_mt = {
                 vips.g_value_set_int(gv, value)
             elseif gtype == gvalue.gstr_type then
                 vips.g_value_set_string(gv, value)
+            elseif gtype == gvalue.gboolean_type then
+                vips.g_value_set_boolean(gv, value)
             elseif gtype == gvalue.image_type then
+                vips.g_value_set_object(gv, value)
+            elseif gtype == gvalue.blob_type then
                 vips.g_value_set_object(gv, value)
             else
                 print("unsupported gtype", gtype)
@@ -92,8 +102,13 @@ local gvalue_mt = {
                 result = vips.g_value_get_int(gv)
             elseif gtype == gvalue.gstr_type then
                 result = ffi.string(vips.g_value_get_string(gv))
+            elseif gtype == gvalue.gboolean_type then
+                result = vips.g_value_get_boolean(gv)
             elseif gtype == gvalue.image_type then
                 result = ffi.cast(gvalue.image_typeof,
+                    vips.g_value_get_object(gv))
+            elseif gtype == gvalue.blob_type then
+                result = ffi.cast(gvalue.blob_typeof,
                     vips.g_value_get_object(gv))
             else
                 print("unsupported gtype", gtype)
