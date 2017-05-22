@@ -1,14 +1,14 @@
 local vimage = require("vimage_connector")
 
-print("")
-print("load from file and save to buffer:")
-image5 = vimage.new_from_file("/data/images/secondImg.png")
-image5 = image5:invert()
-buffer = image5:write_to_buffer(".jpg")
-str = ffi.string(buffer, ffi.sizeof(buffer))
-local f = io.open("/data/images/x2.jpg", "w+b")
-f:write(str)
-f:close()
+--print("")
+--print("load from file and save to buffer:")
+--image5 = vimage.new_from_file("/data/images/secondImg.png")
+--image5 = image5:invert()
+--buffer = image5:write_to_buffer(".jpg")
+--str = ffi.string(buffer, ffi.sizeof(buffer))
+--local f = io.open("/data/images/x2.jpg", "w+b")
+--f:write(str)
+--f:close()
 
 
 print("")
