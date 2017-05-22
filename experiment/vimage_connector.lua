@@ -14,8 +14,10 @@ ffi.cdef[[
     } VipsImage;
 
     const char* vips_foreign_find_load (const char *name);
+    const char *vips_foreign_find_load_buffer(const void *data, size_t size);
 
     const char* vips_foreign_find_save (const char* name);
+    const char *vips_foreign_find_save_buffer( const char *suffix );
 
 ]]
 
@@ -33,10 +35,22 @@ local vimage_mt = {
             return voperation.call(operation_name, filename, unpack{...})
         end,
 
+        new_from_buffer = function(format_string, data, ...)
+            local operation_name =
+            ffi.string(vips.vips_foreign_find_load_buffer(data, string.len(data)))
+            return voperation.call(operation_name, data, format_string, unpack{...})
+        end,
+
         write_to_file = function(self, filename, ...)
             local operation_name =
             ffi.string(vips.vips_foreign_find_save(filename))
             return voperation.call(operation_name, self, filename, unpack{...})
+        end,
+
+        write_to_buffer = function(self, format_string, ...)
+            local operation_name =
+            ffi.string(vips.vips_foreign_find_save_buffer(format_string))
+            return voperation.call(operation_name, self, format_string, unpack{...})
         end,
     }
 }
